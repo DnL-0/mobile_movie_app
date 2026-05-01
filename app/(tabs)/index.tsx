@@ -5,6 +5,7 @@ import SearchBar from "@/components/SearchBar";
 import { useRouter } from "expo-router";
 import useFetch from "@/services/useFetch";
 import {fetchMovies} from "@/services/api";
+import {getTrendingMovies} from "@/services/appwrite";
 import MovieCard from "@/components/MovieCard";
 
 export default function Index() {
@@ -17,6 +18,12 @@ export default function Index() {
     } = useFetch(() => fetchMovies({
        query: ''
     }))
+
+    const {
+        data: trendingMovies,
+        loading: trendingLoading,
+        error: trendingError
+    } = useFetch(() => getTrendingMovies(), true)
 
   return (
     <View className="flex-1 bg-primary">
@@ -42,6 +49,38 @@ export default function Index() {
                         onPress={() => router.push("/search")}
                         placeholder="Search for a movie"
                     />
+
+                    {trendingLoading ? (
+                        <ActivityIndicator size="small" color="#0000ff" className="mt-5" />
+                    ) : trendingError ? (
+                        <Text className="text-red-500 mt-5">Error loading trending</Text>
+                    ) : (
+                        trendingMovies && trendingMovies.length > 0 && (
+                            <View className="mt-5">
+                                <Text className="text-lg text-white font-bold mb-3">
+                                    Trending Movies
+                                </Text>
+                                <FlatList
+                                    data={trendingMovies}
+                                    renderItem={({ item, index }) => (
+                                        <MovieCard
+                                            id={item.movie_id}
+                                            title={item.title}
+                                            poster_path={undefined}
+                                            poster_url={item.poster_url}
+                                            ranking={index + 1}
+                                        />
+                                    )}
+                                    keyExtractor={(item) => item.$id}
+                                    horizontal
+                                    showsHorizontalScrollIndicator={false}
+                                    scrollEnabled={true}
+                                    className="mb-5"
+                                    ItemSeparatorComponent={() => <View className="w-4" />}
+                                />
+                            </View>
+                        )
+                    )}
 
                     <>
                         <Text className="text-lg text-white font-bold mt-5 mb-3">

@@ -15,6 +15,14 @@ interface Movie {
   [key: string]: any;
 }
 
+interface TrendingMovie {
+  movie_id: number;
+  title: string;
+  poster_url: string;
+  count: number;
+  $id: string;
+}
+
 const buildPosterUrl = (movie: Movie): string => {
   // If poster_url already exists as a full URL, use it
   if (movie.poster_url && movie.poster_url.startsWith("http")) {
@@ -77,9 +85,15 @@ export const updateSearchCount = async (searchTerm: string, movie?: Movie) => {
 };
 
 export const getTrendingMovies = async (): Promise<TrendingMovie[] | undefined> => {
-  try{
+  try {
+    const response = await databases.listDocuments(
+      DATABASE_ID!,
+      COLLECTION_ID!,
+      [Query.orderDesc("count"), Query.limit(10)]
+    );
 
-  } catch (error){
-    
+    return response.documents as unknown as TrendingMovie[];
+  } catch (error) {
+    console.error("Error fetching trending movies:", error);
   }
-}
+};
