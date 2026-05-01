@@ -84,12 +84,14 @@ export const updateSearchCount = async (searchTerm: string, movie?: Movie) => {
   }
 };
 
-export const getTrendingMovies = async (): Promise<TrendingMovie[] | undefined> => {
+export const getTrendingMovies = async (): Promise<
+  TrendingMovie[] | undefined
+> => {
   try {
     const response = await databases.listDocuments(
       DATABASE_ID!,
       COLLECTION_ID!,
-      [Query.orderDesc("count"), Query.limit(10)]
+      [Query.orderDesc("count"), Query.limit(10)],
     );
 
     return response.documents as unknown as TrendingMovie[];
