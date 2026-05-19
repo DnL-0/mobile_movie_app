@@ -20,8 +20,10 @@ const MovieCard = ({
       : "https://placehold.co/600x400/1a1a1a/ffffff.png");
 
   return (
-    <Link href={`/movie/${id}`} asChild>
-      <TouchableOpacity className={trending ? "w-full relative" : "w-[30%] relative"}>
+    <Link href={`/movies/${id}`} asChild>
+      <TouchableOpacity
+        className={trending ? "w-full relative" : "w-[30%] relative"}
+      >
         <Image
           source={{ uri: imageUri }}
           className="w-full h-52 rounded-lg"
