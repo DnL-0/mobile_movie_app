@@ -7,12 +7,13 @@ import { getTrendingMovies } from "@/services/appwrite";
 import useFetch from "@/services/useFetch";
 import { useRouter } from "expo-router";
 import {
-    ActivityIndicator,
-    FlatList,
-    Image,
-    ScrollView,
-    Text,
-    View,
+  ActivityIndicator,
+  Dimensions,
+  FlatList,
+  Image,
+  ScrollView,
+  Text,
+  View,
 } from "react-native";
 
 export default function Index() {
@@ -33,6 +34,8 @@ export default function Index() {
     loading: trendingLoading,
     error: trendingError,
   } = useFetch(() => getTrendingMovies(), true);
+
+  const cardWidth = (Dimensions.get("window").width - 50) / 3;
 
   return (
     <View className="flex-1 bg-primary">
@@ -78,20 +81,23 @@ export default function Index() {
                   <FlatList
                     data={trendingMovies}
                     renderItem={({ item, index }) => (
-                      <MovieCard
-                        id={item.movie_id}
-                        title={item.title}
-                        poster_path={undefined}
-                        poster_url={item.poster_url}
-                        ranking={index + 1}
-                      />
+                      <View style={{ width: cardWidth }}>
+                        <MovieCard
+                          id={item.movie_id}
+                          title={item.title}
+                          poster_path={undefined}
+                          poster_url={item.poster_url}
+                          ranking={index + 1}
+                          trending={true}
+                        />
+                      </View>
                     )}
                     keyExtractor={(item) => item.$id}
                     horizontal
                     showsHorizontalScrollIndicator={false}
                     scrollEnabled={true}
                     className="mb-5"
-                    ItemSeparatorComponent={() => <View className="w-4" />}
+                    ItemSeparatorComponent={() => <View style={{ width: 20 }} />}
                   />
                 </View>
               )

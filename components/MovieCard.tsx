@@ -11,7 +11,8 @@ const MovieCard = ({
   vote_average,
   release_date,
   ranking,
-}: Movie & { poster_url?: string; ranking?: number }) => {
+  trending,
+}: Movie & { poster_url?: string; ranking?: number; trending?: boolean }) => {
   const imageUri =
     poster_url ||
     (poster_path
@@ -20,17 +21,15 @@ const MovieCard = ({
 
   return (
     <Link href={`/movie/${id}`} asChild>
-      <TouchableOpacity className="w-[30%] relative">
+      <TouchableOpacity className={trending ? "w-full relative" : "w-[30%] relative"}>
         <Image
-          source={{
-            uri: imageUri,
-          }}
+          source={{ uri: imageUri }}
           className="w-full h-52 rounded-lg"
           resizeMode="cover"
         />
 
         {ranking && (
-          <View className="absolute bottom-0 left-0 bg-purple-500 rounded-tr-lg px-2 py-1">
+          <View className="absolute top-0 left-0 bg-purple-500 rounded-br-lg px-2 py-1">
             <Text className="text-white font-bold text-sm">#{ranking}</Text>
           </View>
         )}
