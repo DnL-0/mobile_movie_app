@@ -1,4 +1,6 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { create } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
 
 export interface SavedMovie {
   id: number;
@@ -19,35 +21,37 @@ interface SavedMoviesStore {
   isMovieSaved: (movieId: number) => boolean;
 }
 
-const useSavedMoviesStore = create<SavedMoviesStore>((set, get) => ({
-  movies: [],
+const useSavedMoviesStore = create<SavedMoviesStore>()(
+  persist(
+    (set, get) => ({
+      movies: [],
 
-  saveMovie: (movie: SavedMovie) => {
-    const state = get();
-    const alreadySaved = state.movies.some((m) => m.id === movie.id);
+      saveMovie: (movie: SavedMovie) => {
+        const alreadySaved = get().movies.some((m) => m.id === movie.id);
+        if (!alreadySaved) {
+          set((state) => ({
+            movies: [...state.movies, { ...movie, savedAt: Date.now() }],
+          }));
+        }
+      },
 
-    if (!alreadySaved) {
-      set({
-        movies: [...state.movies, { ...movie, savedAt: Date.now() }],
-      });
-    }
-  },
+      removeSavedMovie: (movieId: number) => {
+        set((state) => ({
+          movies: state.movies.filter((m) => m.id !== movieId),
+        }));
+      },
 
-  removeSavedMovie: (movieId: number) => {
-    const state = get();
-    set({
-      movies: state.movies.filter((m) => m.id !== movieId),
-    });
-  },
+      getSavedMovies: () => get().movies,
 
-  getSavedMovies: () => {
-    return get().movies;
-  },
-
-  isMovieSaved: (movieId: number) => {
-    return get().movies.some((m) => m.id === movieId);
-  },
-}));
+      isMovieSaved: (movieId: number) =>
+        get().movies.some((m) => m.id === movieId),
+    }),
+    {
+      name: "saved-movies",
+      storage: createJSONStorage(() => AsyncStorage),
+    },
+  ),
+);
 
 export const saveMovie = async (movie: SavedMovie) => {
   useSavedMoviesStore.getState().saveMovie(movie);

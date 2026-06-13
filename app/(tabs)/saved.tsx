@@ -1,40 +1,29 @@
 import MovieCard from "@/components/MovieCard";
 import { images } from "@/constants/images";
-import { getSavedMovies, SavedMovie } from "@/services/savedMovies";
-import { useFocusEffect } from "@react-navigation/native";
-import React, { useCallback, useState } from "react";
+import useSavedMoviesStore from "@/services/savedMovies";
+import React, { useEffect, useState } from "react";
 import {
     ActivityIndicator,
     FlatList,
     Image,
-    StyleSheet,
     Text,
     View
 } from "react-native";
 
 const Saved = () => {
-  const [savedMovies, setSavedMovies] = useState<SavedMovie[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const loadSavedMovies = async () => {
-    try {
-      setLoading(true);
-      const movies = getSavedMovies();
-      setSavedMovies(movies);
-    } catch (error) {
-      console.error("Error loading saved movies:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useFocusEffect(
-    useCallback(() => {
-      loadSavedMovies();
-    }, []),
+  const savedMovies = useSavedMoviesStore((state) => state.movies);
+  const [hydrated, setHydrated] = useState(
+    useSavedMoviesStore.persist.hasHydrated(),
   );
 
-  if (loading) {
+  useEffect(() => {
+    const unsub = useSavedMoviesStore.persist.onFinishHydration(() =>
+      setHydrated(true),
+    );
+    return unsub;
+  }, []);
+
+  if (!hydrated) {
     return (
       <View className="flex-1 bg-primary justify-center items-center">
         <ActivityIndicator size="large" color="#0000ff" />
@@ -59,16 +48,7 @@ const Saved = () => {
           <FlatList
             data={savedMovies}
             renderItem={({ item }) => (
-              <MovieCard
-                id={item.id}
-                title={item.title}
-                poster_path={undefined}
-                poster_url={
-                  item.poster_path
-                    ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
-                    : undefined
-                }
-              />
+              <MovieCard {...(item as unknown as Movie)} />
             )}
             keyExtractor={(item) => item.id.toString()}
             numColumns={3}
@@ -85,7 +65,5 @@ const Saved = () => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({});
 
 export default Saved;
