@@ -35,10 +35,9 @@ const Search = () => {
   useEffect(() => {
     const timeoutId = setTimeout(async () => {
       if (searchQuery.trim()) {
-        await loadMovies();
-        // Save to Appwrite only after fetching results
-        if (movies && movies.length > 0) {
-          updateSearchCount(searchQuery, movies[0]);
+        const result = await loadMovies();
+        if (result && result.length > 0) {
+          updateSearchCount(searchQuery, result[0]);
         }
       } else {
         reset();

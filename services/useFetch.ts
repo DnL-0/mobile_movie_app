@@ -13,6 +13,7 @@ const useFetch = (fetchFunction: () => Promise<T>, autoFetch = true) => {
             const result = await fetchFunction();
 
             setData(result);
+            return result;
         } catch (err) {
             // @ts-ignore
             setError(err instanceof Error ? err : new Error('An error occurred'));
