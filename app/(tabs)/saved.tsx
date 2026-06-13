@@ -1,7 +1,7 @@
 import MovieCard from "@/components/MovieCard";
 import { images } from "@/constants/images";
 import useSavedMoviesStore from "@/services/savedMovies";
-import React, { useEffect, useState } from "react";
+import React from "react";
 import {
     ActivityIndicator,
     FlatList,
@@ -12,18 +12,9 @@ import {
 
 const Saved = () => {
   const savedMovies = useSavedMoviesStore((state) => state.movies);
-  const [hydrated, setHydrated] = useState(
-    useSavedMoviesStore.persist.hasHydrated(),
-  );
+  const loading = useSavedMoviesStore((state) => state.loading);
 
-  useEffect(() => {
-    const unsub = useSavedMoviesStore.persist.onFinishHydration(() =>
-      setHydrated(true),
-    );
-    return unsub;
-  }, []);
-
-  if (!hydrated) {
+  if (loading) {
     return (
       <View className="flex-1 bg-primary justify-center items-center">
         <ActivityIndicator size="large" color="#0000ff" />

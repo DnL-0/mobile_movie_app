@@ -1,6 +1,7 @@
 import { Account, ID } from "react-native-appwrite";
 import client from "@/lib/appwrite";
 import { create } from "zustand";
+import useSavedMoviesStore from "@/services/savedMovies";
 
 const account = new Account(client);
 
@@ -28,6 +29,7 @@ const useAuthStore = create<AuthStore>((set) => ({
   init: async () => {
     try {
       const u = await account.get();
+      await useSavedMoviesStore.getState().loadForUser(u.$id);
       set({ user: { $id: u.$id, name: u.name, email: u.email }, initialized: true });
     } catch {
       set({ user: null, initialized: true });
@@ -37,8 +39,9 @@ const useAuthStore = create<AuthStore>((set) => ({
   login: async (email, password) => {
     set({ loading: true });
     try {
-      await account.createEmailPasswordSession(email, password);
+      await account.createEmailPasswordSession({ email, password });
       const u = await account.get();
+      await useSavedMoviesStore.getState().loadForUser(u.$id);
       set({ user: { $id: u.$id, name: u.name, email: u.email }, loading: false });
     } catch (error) {
       set({ loading: false });
@@ -49,9 +52,10 @@ const useAuthStore = create<AuthStore>((set) => ({
   signup: async (name, email, password) => {
     set({ loading: true });
     try {
-      await account.create(ID.unique(), email, password, name);
-      await account.createEmailPasswordSession(email, password);
+      await account.create({ userId: ID.unique(), email, password, name });
+      await account.createEmailPasswordSession({ email, password });
       const u = await account.get();
+      await useSavedMoviesStore.getState().loadForUser(u.$id);
       set({ user: { $id: u.$id, name: u.name, email: u.email }, loading: false });
     } catch (error) {
       set({ loading: false });
@@ -61,8 +65,9 @@ const useAuthStore = create<AuthStore>((set) => ({
 
   logout: async () => {
     try {
-      await account.deleteSession("current");
+      await account.deleteSession({ sessionId: "current" });
     } finally {
+      useSavedMoviesStore.getState().clearMovies();
       set({ user: null });
     }
   },

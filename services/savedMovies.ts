@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { create } from "zustand";
-import { createJSONStorage, persist } from "zustand/middleware";
+
+const storageKey = (userId: string) => `saved-movies-${userId}`;
 
 export interface SavedMovie {
   id: number;
@@ -15,60 +16,69 @@ export interface SavedMovie {
 
 interface SavedMoviesStore {
   movies: SavedMovie[];
-  saveMovie: (movie: SavedMovie) => void;
-  removeSavedMovie: (movieId: number) => void;
+  userId: string | null;
+  loading: boolean;
+  loadForUser: (userId: string) => Promise<void>;
+  clearMovies: () => void;
+  saveMovie: (movie: SavedMovie) => Promise<void>;
+  removeSavedMovie: (movieId: number) => Promise<void>;
   getSavedMovies: () => SavedMovie[];
   isMovieSaved: (movieId: number) => boolean;
 }
 
-const useSavedMoviesStore = create<SavedMoviesStore>()(
-  persist(
-    (set, get) => ({
-      movies: [],
+const useSavedMoviesStore = create<SavedMoviesStore>((set, get) => ({
+  movies: [],
+  userId: null,
+  loading: false,
 
-      saveMovie: (movie: SavedMovie) => {
-        const alreadySaved = get().movies.some((m) => m.id === movie.id);
-        if (!alreadySaved) {
-          set((state) => ({
-            movies: [...state.movies, { ...movie, savedAt: Date.now() }],
-          }));
-        }
-      },
+  loadForUser: async (userId: string) => {
+    set({ loading: true });
+    try {
+      const json = await AsyncStorage.getItem(storageKey(userId));
+      const movies: SavedMovie[] = json ? JSON.parse(json) : [];
+      set({ movies, userId, loading: false });
+    } catch {
+      set({ movies: [], userId, loading: false });
+    }
+  },
 
-      removeSavedMovie: (movieId: number) => {
-        set((state) => ({
-          movies: state.movies.filter((m) => m.id !== movieId),
-        }));
-      },
+  clearMovies: () => set({ movies: [], userId: null }),
 
-      getSavedMovies: () => get().movies,
+  saveMovie: async (movie: SavedMovie) => {
+    const { movies, userId } = get();
+    if (!userId || movies.some((m) => m.id === movie.id)) return;
+    const updated = [...movies, { ...movie, savedAt: Date.now() }];
+    set({ movies: updated });
+    await AsyncStorage.setItem(storageKey(userId), JSON.stringify(updated));
+  },
 
-      isMovieSaved: (movieId: number) =>
-        get().movies.some((m) => m.id === movieId),
-    }),
-    {
-      name: "saved-movies",
-      storage: createJSONStorage(() => AsyncStorage),
-    },
-  ),
-);
+  removeSavedMovie: async (movieId: number) => {
+    const { movies, userId } = get();
+    if (!userId) return;
+    const updated = movies.filter((m) => m.id !== movieId);
+    set({ movies: updated });
+    await AsyncStorage.setItem(storageKey(userId), JSON.stringify(updated));
+  },
+
+  getSavedMovies: () => get().movies,
+
+  isMovieSaved: (movieId: number) => get().movies.some((m) => m.id === movieId),
+}));
 
 export const saveMovie = async (movie: SavedMovie) => {
-  useSavedMoviesStore.getState().saveMovie(movie);
+  await useSavedMoviesStore.getState().saveMovie(movie);
   return true;
 };
 
 export const removeSavedMovie = async (movieId: number) => {
-  useSavedMoviesStore.getState().removeSavedMovie(movieId);
+  await useSavedMoviesStore.getState().removeSavedMovie(movieId);
   return true;
 };
 
-export const getSavedMovies = (): SavedMovie[] => {
-  return useSavedMoviesStore.getState().getSavedMovies();
-};
+export const getSavedMovies = (): SavedMovie[] =>
+  useSavedMoviesStore.getState().getSavedMovies();
 
-export const isMovieSaved = async (movieId: number): Promise<boolean> => {
-  return useSavedMoviesStore.getState().isMovieSaved(movieId);
-};
+export const isMovieSaved = async (movieId: number): Promise<boolean> =>
+  useSavedMoviesStore.getState().isMovieSaved(movieId);
 
 export default useSavedMoviesStore;

@@ -12,7 +12,7 @@ A React Native mobile app built with Expo that lets users discover movies, searc
 | Navigation | Expo Router (file-based) |
 | Styling | NativeWind (Tailwind CSS for RN) |
 | State Management | Zustand |
-| Local Persistence | AsyncStorage + Zustand persist middleware |
+| Local Persistence | AsyncStorage (per-user scoped keys) |
 | Backend / Auth / DB | Appwrite (Cloud) |
 | Movie Data | TMDB API |
 | Language | TypeScript |
@@ -56,7 +56,7 @@ mobile_movie_app/
 │   ├── api.ts               # TMDB API calls (fetchMovies, fetchMovieDetails)
 │   ├── appwrite.ts          # Appwrite DB: updateSearchCount, getTrendingMovies
 │   ├── auth.ts              # Zustand auth store (login, signup, logout, init)
-│   ├── savedMovies.ts       # Zustand saved-movies store with AsyncStorage persist
+│   ├── savedMovies.ts       # Zustand saved-movies store, keyed per user in AsyncStorage
 │   └── useFetch.ts          # Generic data-fetching hook
 ├── lib/
 │   └── appwrite.ts          # Appwrite client + Databases instance
@@ -138,13 +138,15 @@ The fix that makes this work reliably: `useFetch`'s `refetch` function now retur
 
 ### Saved Movies (`services/savedMovies.ts`)
 
-Saved movies are managed with a Zustand store wrapped in the `persist` middleware, backed by `@react-native-async-storage/async-storage`. This means the saved list survives app restarts.
+Saved movies are managed with a plain Zustand store backed by `@react-native-async-storage/async-storage`. The storage key is scoped to the logged-in user — `saved-movies-{userId}` — so each account on the same device has its own independent list, and one user's saved movies are never visible to another.
 
-- `saveMovie(movie)` — adds to the store (deduplication by ID) and writes through to AsyncStorage.
-- `removeSavedMovie(id)` — removes from the store and AsyncStorage.
-- `isMovieSaved(id)` — synchronous check used on the movie detail screen.
+- `loadForUser(userId)` — called by the auth service immediately after a session is established. Reads the user's list from AsyncStorage into the store.
+- `clearMovies()` — called by the auth service on logout. Wipes the in-memory list so the next user starts with a clean state.
+- `saveMovie(movie)` — deduplicates by ID, updates the store, and writes the full list back to the user-scoped AsyncStorage key.
+- `removeSavedMovie(id)` — filters the store and persists the updated list.
+- `isMovieSaved(id)` — synchronous read from store state, used on the movie detail screen.
 
-The Saved screen subscribes directly to the store with `useSavedMoviesStore(state => state.movies)` so it updates reactively whenever a movie is saved or removed, including after the initial AsyncStorage hydration.
+Because `loadForUser` is awaited inside `init()`, `login()`, and `signup()` before `initialized` is set to `true`, the saved list is always ready before the tab screens mount. The Saved screen reads `loading` from the store to show a spinner during the brief AsyncStorage read.
 
 ### Data Fetching (`services/useFetch.ts`)
 
@@ -174,9 +176,10 @@ A generic hook that wraps any async function with `data`, `loading`, and `error`
 
 ### Saved (`app/(tabs)/saved.tsx`)
 
-- Shows the user's saved movies in a 3-column grid.
-- Reactively updates when movies are added or removed elsewhere in the app.
-- Displays a hydration loading indicator on first launch while AsyncStorage data is being read.
+- Shows the current user's saved movies in a 3-column grid.
+- Reactively updates when movies are saved or removed elsewhere in the app.
+- Displays a loading spinner while the user's AsyncStorage data is being read on first mount.
+- The list is automatically cleared when the user signs out, so switching accounts always shows the correct collection.
 
 ### Profile (`app/(tabs)/profile.tsx`)
 
