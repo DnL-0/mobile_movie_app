@@ -96,7 +96,7 @@ const MovieDetails = () => {
   return (
     <View className="flex-1 bg-primary">
       <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Backdrop Image */}
+        {/* Backdrop Image with Overlay */}
         <View className="relative">
           <Image
             source={{
@@ -104,42 +104,53 @@ const MovieDetails = () => {
                 ? `https://image.tmdb.org/t/p/w500${movie.backdrop_path}`
                 : "https://placehold.co/600x400/1a1a1a/ffffff.png",
             }}
-            className="w-full h-64"
+            className="w-full h-72"
             resizeMode="cover"
           />
 
+          {/* Dark Overlay */}
+          <View className="absolute inset-0 bg-black/40" />
+
+          {/* Back Button */}
           <TouchableOpacity
             onPress={() => router.back()}
-            className="absolute top-12 left-5 bg-black/50 rounded-full p-2"
+            className="absolute top-14 left-5 bg-black/60 rounded-full p-3"
           >
-            <Text className="text-white text-xl">←</Text>
+            <Text className="text-light-100 text-xl font-bold">←</Text>
           </TouchableOpacity>
         </View>
 
         <View className="px-5 pb-10">
-          {/* Poster and Title */}
-          <View className="flex-row mt-4 gap-4">
-            <Image
-              source={{
-                uri: movie.poster_path
-                  ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
-                  : "https://placehold.co/600x400/1a1a1a/ffffff.png",
-              }}
-              className="w-28 h-44 rounded-lg"
-              resizeMode="cover"
-            />
-            <View className="flex-1 justify-start pt-2">
-              <Text className="text-lg text-white font-bold" numberOfLines={3}>
+          {/* Poster and Title Section */}
+          <View className="flex-row gap-5 -mt-20 mb-6 relative z-10">
+            <View className="rounded-2xl overflow-hidden bg-dark-100 border border-dark-100 shadow-lg">
+              <Image
+                source={{
+                  uri: movie.poster_path
+                    ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
+                    : "https://placehold.co/600x400/1a1a1a/ffffff.png",
+                }}
+                className="w-32 h-48 rounded-2xl"
+                resizeMode="cover"
+              />
+            </View>
+
+            <View className="flex-1 justify-end pb-2">
+              <Text
+                className="text-2xl text-white font-bold leading-tight mb-3"
+                numberOfLines={4}
+              >
                 {movie.title}
               </Text>
-              <Text className="text-sm text-gray-400 mt-2">
-                {movie.release_date?.split("-")[0]}
+
+              <Text className="text-light-200 text-sm font-medium mb-3">
+                {movie.release_date?.split("-")[0] || "N/A"}
               </Text>
 
-              {/* Rating */}
-              <View className="flex-row items-center gap-2 mt-2">
-                <Image source={icons.star} className="w-4 h-4" />
-                <Text className="text-yellow-400 font-bold">
+              {/* Rating Badge */}
+              <View className="flex-row items-center gap-2 mb-4 bg-dark-100 rounded-full px-3 py-2 w-fit border border-dark-100">
+                <Image source={icons.star} className="w-5 h-5" />
+                <Text className="text-light-100 font-bold text-lg">
                   {(movie.vote_average / 2).toFixed(1)}
                 </Text>
               </View>
@@ -148,78 +159,89 @@ const MovieDetails = () => {
               <TouchableOpacity
                 onPress={handleSaveMovie}
                 disabled={isSaving}
-                className={`mt-4 px-3 py-2 rounded-lg ${
-                  isSaved ? "bg-purple-600" : "bg-gray-700"
+                className={`rounded-xl px-4 py-3 ${
+                  isSaved
+                    ? "bg-purple-600"
+                    : "bg-purple-600 opacity-70 border border-purple-500"
                 }`}
               >
                 <Text className="text-white text-sm font-bold text-center">
-                  {isSaving ? "Loading..." : isSaved ? "✓ Saved" : "Save"}
+                  {isSaving
+                    ? "Saving..."
+                    : isSaved
+                      ? "✓ Saved to Collection"
+                      : "+ Save"}
                 </Text>
               </TouchableOpacity>
             </View>
           </View>
 
-          {/* Overview */}
+          {/* Overview Section */}
           {movie.overview && (
-            <View className="mt-6">
-              <Text className="text-lg text-white font-bold mb-2">
-                Overview
+            <View className="mb-6">
+              <Text className="text-lg text-light-100 font-bold mb-3">
+                Synopsis
               </Text>
-              <Text className="text-gray-300 leading-6">{movie.overview}</Text>
+              <View className="bg-dark-100 rounded-xl p-4 border border-dark-100">
+                <Text className="text-light-200 leading-7 text-sm">
+                  {movie.overview}
+                </Text>
+              </View>
             </View>
           )}
 
-          {/* Additional Info */}
-          <View className="mt-6 gap-4">
-            {movie.genres && movie.genres.length > 0 && (
-              <View>
-                <Text className="text-lg text-white font-bold mb-2">
-                  Genres
-                </Text>
-                <View className="flex-row flex-wrap gap-2">
-                  {movie.genres.map((genre: any) => (
-                    <View
-                      key={genre.id}
-                      className="bg-gray-700 px-3 py-1 rounded-full"
-                    >
-                      <Text className="text-gray-200 text-xs">
-                        {genre.name}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
+          {/* Genres Section */}
+          {movie.genres && movie.genres.length > 0 && (
+            <View className="mb-6">
+              <Text className="text-lg text-light-100 font-bold mb-3">
+                Genres
+              </Text>
+              <View className="flex-row flex-wrap gap-2">
+                {movie.genres.map((genre: any) => (
+                  <View
+                    key={genre.id}
+                    className="bg-purple-600 bg-opacity-30 px-4 py-2 rounded-full border border-purple-500 border-opacity-40"
+                  >
+                    <Text className="text-light-100 text-sm font-medium">
+                      {genre.name}
+                    </Text>
+                  </View>
+                ))}
               </View>
-            )}
+            </View>
+          )}
 
+          {/* Info Cards Section */}
+          <View className="gap-3 mb-6">
             {movie.runtime && (
-              <View>
-                <Text className="text-gray-400 text-sm">
-                  Runtime:{" "}
-                  <Text className="text-white font-bold">
-                    {movie.runtime} minutes
-                  </Text>
+              <View className="bg-dark-100 rounded-xl p-4 border border-dark-100 flex-row justify-between items-center">
+                <Text className="text-light-200 text-sm font-medium">
+                  Runtime
+                </Text>
+                <Text className="text-light-100 font-bold text-base">
+                  {movie.runtime} min
                 </Text>
               </View>
             )}
 
             {movie.budget > 0 && (
-              <View>
-                <Text className="text-gray-400 text-sm">
-                  Budget:{" "}
-                  <Text className="text-white font-bold">
-                    ${(movie.budget / 1000000).toFixed(1)}M
-                  </Text>
+              <View className="bg-dark-100 rounded-xl p-4 border border-dark-100 flex-row justify-between items-center">
+                <Text className="text-light-200 text-sm font-medium">
+                  Budget
+                </Text>
+                <Text className="text-light-100 font-bold text-base">
+                  ${(movie.budget / 1000000).toFixed(1)}M
                 </Text>
               </View>
             )}
 
             {movie.revenue > 0 && (
-              <View>
-                <Text className="text-gray-400 text-sm">
-                  Revenue:{" "}
-                  <Text className="text-white font-bold">
-                    ${(movie.revenue / 1000000).toFixed(1)}M
-                  </Text>
+              <View className="bg-dark-100 rounded-xl p-4 border border-dark-100 flex-row justify-between items-center">
+                <Text className="text-light-200 text-sm font-medium">
+                  Revenue
+                </Text>
+                <Text className="text-light-100 font-bold text-base">
+                  ${(movie.revenue / 1000000).toFixed(1)}M
                 </Text>
               </View>
             )}
